@@ -68,33 +68,58 @@ class FacialAnalysisCreateView(APIView):
             # Save the image first
             analysis = serializer.save(user=request.user)
             
-            # TODO: Add your ML model analysis here
-            # For now, returning a mock analysis result
-            mock_result = self._mock_facial_analysis()
-            analysis.analysis_result = mock_result
-            analysis.save()
-            
-            return Response(
-                FacialAnalysisSerializer(analysis).data,
-                status=status.HTTP_201_CREATED
-            )
+            # Run facial analysis
+            try:
+                # TODO: Uncomment this when you add your ML model
+                # from .ml_model import analyze_face
+                # analysis_result = analyze_face(analysis.image.path)
+                
+                # For now, using mock data
+                analysis_result = self._mock_facial_analysis(analysis.image.path)
+                
+                analysis.analysis_result = analysis_result
+                analysis.save()
+                
+                return Response(
+                    FacialAnalysisSerializer(analysis).data,
+                    status=status.HTTP_201_CREATED
+                )
+            except Exception as e:
+                # If analysis fails, delete the saved image and return error
+                analysis.delete()
+                return Response(
+                    {'error': f'Analysis failed: {str(e)}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def _mock_facial_analysis(self):
-        """Mock analysis result - replace with actual ML model"""
+    def _mock_facial_analysis(self, image_path):
+        """
+        Mock analysis result - replace with actual ML model
+        
+        To integrate your model:
+        1. Create backend/ml_model.py with an analyze_face(image_path) function
+        2. Uncomment the import and function call above
+        3. Remove this mock function
+        """
         return {
             'skin_health': {
                 'acne': 'low',
                 'dark_circles': 'medium',
                 'wrinkles': 'low',
-                'hydration': 'good'
+                'hydration': 'good',
+                'redness': 'low',
+                'pores': 'medium'
             },
             'recommendations': [
-                'Use moisturizer daily',
-                'Get adequate sleep',
-                'Stay hydrated'
+                'Use a gentle cleanser twice daily',
+                'Apply moisturizer with SPF 30+',
+                'Get 7-8 hours of sleep',
+                'Stay hydrated',
+                'Use an eye cream for dark circles'
             ],
-            'overall_score': 7.5
+            'overall_score': 7.5,
+            'confidence': 0.85
         }
 
 

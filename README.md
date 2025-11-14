@@ -556,22 +556,73 @@ curl -X GET http://localhost:8000/api/user/profile/ \
 
 ## Adding Your ML Model
 
-To integrate your facial analysis model, update the `_mock_facial_analysis` method in `backend/views.py`:
+To integrate your facial analysis model:
+
+### Step 1: Add your model file
+Place your trained model in the `backend/` directory (e.g., `backend/ml_model.py` or `backend/model.h5`)
+
+### Step 2: Update the analysis view
+In `backend/views.py`, replace the `_mock_facial_analysis` method:
 
 ```python
-def _mock_facial_analysis(self):
-    # Replace this with your actual ML model
-    # Example:
-    # from .ml_model import analyze_face
-    # result = analyze_face(analysis.image.path)
-    # return result
+def _mock_facial_analysis(self, image_path):
+    # Option 1: Import your custom model
+    from .ml_model import analyze_face
+    result = analyze_face(image_path)
+    return result
     
-    return {
-        'skin_health': {...},
-        'recommendations': [...],
-        'overall_score': 7.5
-    }
+    # Option 2: Use TensorFlow/Keras
+    # import tensorflow as tf
+    # model = tf.keras.models.load_model('backend/model.h5')
+    # img = tf.keras.preprocessing.image.load_img(image_path, target_size=(224, 224))
+    # img_array = tf.keras.preprocessing.image.img_to_array(img)
+    # predictions = model.predict(np.expand_dims(img_array, axis=0))
+    # return process_predictions(predictions)
+    
+    # Option 3: Use PyTorch
+    # import torch
+    # from torchvision import transforms
+    # from PIL import Image
+    # model = torch.load('backend/model.pth')
+    # image = Image.open(image_path)
+    # transform = transforms.Compose([...])
+    # tensor = transform(image).unsqueeze(0)
+    # output = model(tensor)
+    # return process_output(output)
 ```
+
+### Step 3: Update the view call
+In the `FacialAnalysisCreateView.post` method, pass the image path:
+
+```python
+# Change this line:
+mock_result = self._mock_facial_analysis()
+
+# To this:
+mock_result = self._mock_facial_analysis(analysis.image.path)
+```
+
+### Expected Output Format
+Your model should return a dictionary with this structure:
+
+```python
+{
+    'skin_health': {
+        'acne': 'low' | 'medium' | 'high',
+        'dark_circles': 'low' | 'medium' | 'high',
+        'wrinkles': 'low' | 'medium' | 'high',
+        'hydration': 'poor' | 'fair' | 'good' | 'excellent'
+    },
+    'recommendations': [
+        'Recommendation 1',
+        'Recommendation 2',
+        ...
+    ],
+    'overall_score': 7.5  # Float between 0-10
+}
+```
+
+You can customize the structure based on your model's output.
 
 ---
 
